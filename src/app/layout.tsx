@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -12,9 +12,37 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+export const viewport: Viewport = {
+  themeColor: "#1e293b",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+};
+
 export const metadata: Metadata = {
   title: "Morning Scroll",
-  description: "Your daily news catchup",
+  description: "Your daily news catchup, personalized for you.",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Morning Scroll",
+  },
+  openGraph: {
+    type: "website",
+    siteName: "Morning Scroll",
+    title: "Morning Scroll",
+    description: "Your daily news catchup, personalized for you.",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Morning Scroll",
+    description: "Your daily news catchup, personalized for you.",
+  },
+  icons: {
+    icon: "/favicon.png",
+    apple: "/icon-192.png",
+  },
 };
 
 import { BookmarkProvider } from '@/context/BookmarkContext';
@@ -32,6 +60,17 @@ export default function RootLayout({
         <BookmarkProvider>
           {children}
         </BookmarkProvider>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if ('serviceWorker' in navigator) {
+                window.addEventListener('load', function() {
+                  navigator.serviceWorker.register('/sw.js');
+                });
+              }
+            `,
+          }}
+        />
       </body>
     </html>
   );
