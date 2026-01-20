@@ -13,6 +13,7 @@ export default function Home() {
   const [articles, setArticles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const { bookmarks } = useBookmarks();
 
   useEffect(() => {
@@ -27,12 +28,18 @@ export default function Home() {
       try {
         let url = `/api/news?category=${encodeURIComponent(activeCategory)}`;
 
+        if (searchQuery) {
+          url += `&q=${encodeURIComponent(searchQuery)}`;
+        }
+
         if (activeCategory === 'My Feed') {
           const bookmarkedCategories = Array.from(new Set(bookmarks.map(b => b.category)));
           if (bookmarkedCategories.length > 0) {
             url = `/api/news?categories=${encodeURIComponent(bookmarkedCategories.join(','))}`;
+            if (searchQuery) url += `&q=${encodeURIComponent(searchQuery)}`;
           } else {
             url = `/api/news?category=Top Stories`;
+            if (searchQuery) url += `&q=${encodeURIComponent(searchQuery)}`;
           }
         }
 
@@ -47,7 +54,7 @@ export default function Home() {
     };
 
     fetchNews();
-  }, [activeCategory, bookmarks]); // Added bookmarks to dependency array for 'My Feed' logic
+  }, [activeCategory, bookmarks, searchQuery]);
 
   // Update articles list when bookmarks change, but only if we are in 'Saved Articles' view
   useEffect(() => {
@@ -64,6 +71,7 @@ export default function Home() {
       <Header
         onMenuClick={() => setIsSidebarOpen(true)}
         onSavedFeedClick={() => setActiveCategory('Saved Articles')}
+        onSearch={setSearchQuery}
       />
 
       <main className="container mx-auto px-4 py-8 sm:px-6 lg:px-8">

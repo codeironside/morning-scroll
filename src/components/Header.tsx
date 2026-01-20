@@ -5,9 +5,17 @@ import { cn } from '@/lib/utils';
 interface HeaderProps {
     onMenuClick?: () => void;
     onSavedFeedClick?: () => void;
+    onSearch?: (query: string) => void;
 }
 
-export const Header = ({ onMenuClick, onSavedFeedClick }: HeaderProps) => {
+export const Header = ({ onMenuClick, onSavedFeedClick, onSearch }: HeaderProps) => {
+    const [searchQuery, setSearchQuery] = React.useState('');
+
+    const handleSearch = (e: React.FormEvent) => {
+        e.preventDefault();
+        onSearch?.(searchQuery);
+    };
+
     return (
         <header className="sticky top-0 z-50 w-full border-b border-slate-200 bg-white/80 backdrop-blur-md">
             <div className="container mx-auto flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
@@ -28,14 +36,16 @@ export const Header = ({ onMenuClick, onSavedFeedClick }: HeaderProps) => {
                 </div>
 
                 <div className="hidden flex-1 justify-center px-8 md:flex">
-                    <div className="relative w-full max-w-md">
+                    <form onSubmit={handleSearch} className="relative w-full max-w-md">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" size={18} />
                         <input
                             type="text"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
                             placeholder="Search news, topics..."
                             className="h-10 w-full rounded-full bg-slate-100 pl-10 pr-4 text-sm outline-none transition-all focus:bg-white focus:ring-2 focus:ring-primary/10"
                         />
-                    </div>
+                    </form>
                 </div>
 
                 <div className="flex items-center gap-4">

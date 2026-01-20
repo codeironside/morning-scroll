@@ -1,5 +1,6 @@
-import React from 'react';
-import { Bookmark, Share2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Bookmark, Share2, Check } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface ArticleCardProps {
     article: {
@@ -16,7 +17,39 @@ import { useBookmarks } from '@/context/BookmarkContext';
 
 export const ArticleCard = ({ article }: ArticleCardProps) => {
     const { toggleBookmark, isBookmarked } = useBookmarks();
+    const [copied, setCopied] = useState(false);
     const bookmarked = isBookmarked(article.url);
+
+    useEffect(() => {
+        if (copied) {
+            const timer = setTimeout(() => setCopied(false), 2000);
+            return () => clearTimeout(timer);
+        }
+    }, [copied]);
+
+    const handleShare = async (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        if (navigator.share) {
+            try {
+                await navigator.share({
+                    title: article.title,
+                    text: article.description,
+                    url: article.url,
+                });
+            } catch (error) {
+                console.error('Error sharing:', error);
+            }
+        } else {
+            try {
+                await navigator.clipboard.writeText(article.url);
+                setCopied(true);
+            } catch (error) {
+                console.error('Error copying to clipboard:', error);
+            }
+        }
+    };
 
     const date = new Date(article.publishedAt).toLocaleDateString('en-US', {
         month: 'short',
@@ -53,14 +86,20 @@ export const ArticleCard = ({ article }: ArticleCardProps) => {
                         <button
                             onClick={() => toggleBookmark(article as any)}
                             className={`rounded-full p-1.5 transition-colors ${bookmarked
-                                    ? 'bg-primary text-white'
-                                    : 'text-muted hover:bg-slate-100 hover:text-primary'
+                                ? 'bg-primary text-white'
+                                : 'text-muted hover:bg-slate-100 hover:text-primary'
                                 }`}
                         >
                             <Bookmark size={16} fill={bookmarked ? "currentColor" : "none"} />
                         </button>
-                        <button className="rounded-full p-1.5 text-muted hover:bg-slate-100 hover:text-primary">
-                            <Share2 size={16} />
+                        <button
+                            onClick={handleShare}
+                            className={cn(
+                                "relative rounded-full p-1.5 transition-all",
+                                copied ? "bg-green-500 text-white" : "text-muted hover:bg-slate-100 hover:text-primary"
+                            )}
+                        >
+                            {copied ? <Check size={16} /> : <Share2 size={16} />}
                         </button>
                     </div>
                 </div>
