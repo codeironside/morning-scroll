@@ -1,50 +1,34 @@
 import Parser from 'rss-parser';
 import { config } from '../../utils/config/index.js';
 
-// const FEED_CONFIG = {
-//     "Nigeria": [
-//         "https://www.vanguardngr.com/feed/",
-//         "https://punchng.com/feed/",
-//         "https://www.premiumtimesng.com/feed",
-//         "https://guardian.ng/feed/"
-//     ],
-//     "Technology": [
-//         "https://hnrss.org/frontpage",
-//         "https://www.theverge.com/rss/index.xml",
-//         "https://techcrunch.com/feed/"
-//     ],
-//     "World News": [
-//         "http://feeds.bbci.co.uk/news/world/rss.xml",
-//         "https://www.aljazeera.com/xml/rss/all.xml",
-//         "https://rss.nytimes.com/services/xml/rss/nyt/World.xml"
-//     ],
-//     "Finance & Markets": [
-//         "https://search.cnbc.com/rs/search/view.xml?partnerId=2000&keywords=finance",
-//         "https://www.ft.com/?format=rss"
-//     ],
-//     "Science & Nature": [
-//         "https://www.quantamagazine.org/feed/",
-//         "https://feeds.npr.org/1007/rss.xml"
-//     ]
-// };
+
 
 export async function fetchNews(category = 'Top Stories', categories = null) {
-    const parser = new Parser();
-    const categoriesToFetch = categories ? categories.split(',') : [category];
-
-    let allArticles = [];
-    let feedsToFetch = [];
-
-    categoriesToFetch.forEach(cat => {
-        const feeds = config.rss_feed[cat] || (cat === 'Top Stories' ? config.rss_feed["Nigeria"] : []);
-        feeds.forEach(url => {
-            feedsToFetch.push({ url, category: cat });
-        });
+    // Parser configured to look like a real browser
+    const parser = new Parser({
+        headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'application/rss+xml, application/xml, text/xml; q=0.1'
+        },
+        // timeout: 10000 // 10 second timeout per feed
     });
 
-    if (feedsToFetch.length === 0) {
-        config.rss_feed["Nigeria"].forEach(url => {
-            feedsToFetch.push({ url, category: 'Top Stories' });
+    const categoriesToFetch = categories ? categories.split(',') : [category];
+    let feedsToFetch = [];
+
+    // If 'Top Stories', fetch EVERYTHING in the config
+    if (category === 'Top Stories' && !categories) {
+        Object.entries(config.rss_feed).forEach(([catName, urls]) => {
+            urls.forEach(url => {
+                feedsToFetch.push({ url, category: catName });
+            });
+        });
+    } else {
+        categoriesToFetch.forEach(cat => {
+            const feeds = config.rss_feed[cat] || [];
+            feeds.forEach(url => {
+                feedsToFetch.push({ url, category: cat });
+            });
         });
     }
 
@@ -63,17 +47,19 @@ export async function fetchNews(category = 'Top Stories', categories = null) {
                 source: feed.title || 'Unknown Source'
             }));
         } catch (e) {
-            console.error(`Error fetching feed ${url}:`, e);
+            // Silence the errors to keep logs clean, or use e.message to debug specific URLs
+            // console.error(`⚠️ Skipped ${url}: ${e.message}`);
             return [];
         }
     });
 
     const results = await Promise.all(feedPromises);
-    allArticles = results.flat();
+    const allArticles = results.flat();
 
     const freshArticles = filterByMorningWindow(allArticles, 24);
     const uniqueArticles = deduplicateArticles(freshArticles);
 
+    // Shuffle/Mix logic
     const groupedBySource = {};
     uniqueArticles.forEach(article => {
         if (!groupedBySource[article.source]) {
@@ -102,23 +88,18 @@ export async function fetchNews(category = 'Top Stories', categories = null) {
         index++;
     }
 
-    if (mixedArticles.length > 0) {
-        mixedArticles[0].isHero = true;
-    }
-
     return mixedArticles;
 }
 
 function extractImage(item) {
     if (item.enclosure && item.enclosure.url) return item.enclosure.url;
-
     const mediaContent = item['media:content'];
     if (mediaContent && mediaContent.$ && mediaContent.$.url) return mediaContent.$.url;
-
     const content = item.content || item.contentSnippet || '';
     const imgMatch = content.match(/<img[^>]+src="([^">]+)"/);
     if (imgMatch) return imgMatch[1];
 
+    // Default fallback image
     return `https://images.unsplash.com/photo-1504711434969-e33886168f5c?q=80&w=2070&auto=format&fit=crop`;
 }
 
@@ -131,12 +112,9 @@ function filterByMorningWindow(articles, hours) {
 function deduplicateArticles(articles) {
     const seen = new Set();
     return articles.filter(article => {
-        const key = `${article.title.toLowerCase()}_${article.source}`;
-        if (seen.has(key)) {
-            return false;
-        }
+        const key = `${article.title.toLowerCase().trim()}_${article.source}`;
+        if (seen.has(key)) return false;
         seen.add(key);
         return true;
     });
 }
-

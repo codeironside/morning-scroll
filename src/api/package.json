@@ -18,6 +18,7 @@
   },
   "homepage": "https://github.com/geektutor/morning-scroll#readme",
   "dependencies": {
+    "axios": "^1.13.4",
     "cors": "^2.8.6",
     "dayjs": "^1.11.19",
     "dotenv": "^17.2.3",
@@ -25,6 +26,7 @@
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.1.5",
+    "node-cron": "^4.2.1",
     "nodemon": "^3.1.11",
     "rss-parser": "^3.13.0",
     "winston": "^3.19.0",
