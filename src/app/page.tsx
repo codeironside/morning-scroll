@@ -54,7 +54,7 @@ export default function Home() {
     const fetchNews = async () => {
       setLoading(true);
       try {
-        let url = `/api/news?category=${encodeURIComponent(activeCategory)}`;
+        let url = `http://localhost:2345/api/v1/news?category=${encodeURIComponent(activeCategory)}`;
 
         if (searchQuery) {
           url += `&q=${encodeURIComponent(searchQuery)}`;
@@ -63,13 +63,19 @@ export default function Home() {
         if (activeCategory === 'My Feed') {
           // Use userCategories if in 'My Feed'
           const feedCategories = userCategories.length > 0 ? userCategories : ['Top Stories'];
-          url = `/api/news?categories=${encodeURIComponent(feedCategories.join(','))}`;
+          url = `http://localhost:2345/api/v1/news?categories=${encodeURIComponent(feedCategories.join(','))}`;
           if (searchQuery) url += `&q=${encodeURIComponent(searchQuery)}`;
         }
 
         const res = await fetch(url);
         const data = await res.json();
-        setArticles(Array.isArray(data) ? data : []);
+
+        if (data.success && Array.isArray(data.data)) {
+          setArticles(data.data);
+        } else {
+          setArticles([]);
+          console.error('API response format error or unsuccessful:', data);
+        }
       } catch (error) {
         console.error('Failed to fetch news:', error);
       } finally {
