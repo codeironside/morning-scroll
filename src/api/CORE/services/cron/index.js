@@ -193,12 +193,12 @@ async function runNewsJob() {
     }
 }
 
-cron.schedule('*/10 * * * *', () => {
+cron.schedule('*/5 * * * *', () => {
     runNewsJob();
 });
 
 console.log('🚀 Hot News Channel Service Started');
-console.log('⏱️  Posting hot news every 10 minutes');
+console.log('⏱️  Posting hot news every 5 minutes');
 
 setTimeout(() => {
     runNewsJob();
